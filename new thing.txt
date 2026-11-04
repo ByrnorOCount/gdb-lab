@@ -1,0 +1,21 @@
+Differences from the doc when using GEF
+
+Core commands (break, run, start, disas, info reg, x/..., print, set, step, next, finish, continue, info break) are plain GDB and work identically.
+
+GEF prints a context panel (registers, stack, code) at every stop, so you’ll see more output than in the doc. registers is a GEF alternative to info reg, and context redraws the panel.
+
+The x command works the same way, e.g. x/24xb main, x/24xb $eip, x/32xb $esp.
+
+Your addresses will differ from the doc’s. PIE is on, so breakpoints show small offsets like 0x12b5 before run and rebased addresses (0x5655...) after.
+
+Compile with the doc’s command: gcc -g -m32 test.c -o test.out -mpreferred-stack-boundary=2. Newer GCC may warn about or ignore that flag, so check that your disassembly looks roughly like the doc’s.
+
+
+gcc -m32 -g flag.c -o flag.out -fno-stack-protector -mpreferred-stack-boundary=2
+gdb -q flag.out
+gef➤  disas main
+   0x000011af <+18>:    mov    DWORD PTR [ebp-0x8],0x0
+   0x000011bf <+34>:    lea    eax,[ebp-0x18]
+buffer is at ebp-0x18, flag is at ebp-0x8
+Distance: 0x18 - 0x8 = 0x10 = 16 bytes. So strcpy fills buffer[0..15] with the first 16 bytes of your input, then anything from the 17th byte onward spills into flag’s 4 bytes.
+./flag.out $(python3 -c "print('A'*20)") -> Modified

