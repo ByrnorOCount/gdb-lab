@@ -7,7 +7,7 @@ you're not compiling or hunting for addresses live. During the talk you only run
 
 Your exact addresses will differ from the examples below — that's expected, that's the
 point (ASLR, different machine, different libc build). Step 2 shows you how to get
-*your* real numbers.
+_your_ real numbers.
 
 ---
 
@@ -20,9 +20,10 @@ gcc -m32 -g -fno-stack-protector -no-pie -o vuln.out vuln.c
 ```
 
 What each flag buys you for the demo:
+
 - `-fno-stack-protector` — no canary, so the overflow isn't caught before you reach the return address (same as your earlier labs)
 - `-no-pie` — the program's own code sits at a fixed, predictable address (not needed for ret2libc itself, just keeps the demo simple)
-- **Deliberately NOT included: `-z execstack` or anything that makes the stack executable.** NX/DEP stays ON. That's the whole point — this exploit works *despite* the stack being non-executable, because it never runs code off the stack.
+- **Deliberately NOT included: `-z execstack` or anything that makes the stack executable.** NX/DEP stays ON. That's the whole point — this exploit works _despite_ the stack being non-executable, because it never runs code off the stack.
 
 ### 2. Disable ASLR for the demo machine (so addresses don't jump around live)
 
@@ -94,42 +95,53 @@ your addresses are correct.
 
 ## Live, in front of the class (~7 minutes)
 
-Talk through each step as you type it — the class should see *you* finding the
+Talk through each step as you type it — the class should see _you_ finding the
 pieces, not just a working exploit appearing.
 
 **1. Show the source (30 sec)**
+
 ```bash
 cat vuln.c
 ```
+
 Point out: `strcpy(buffer, input)` into a 64-byte stack buffer, no bounds check —
 same bug class as your earlier labs.
 
 **2. Show NX is on, and that naive shellcode injection is dead (1 min)**
+
 ```bash
 checksec --file=vuln.out      # or: readelf -l vuln.out | grep -A1 GNU_STACK
 ```
+
 `NX enabled` / stack segment marked `RW` not `RWE` → the stack is not executable.
 If you tried the old "jump to shellcode on the stack" trick here, it'd segfault.
 
 **3. Find the gadgets live (2–3 min)** — repeat step 4 from "Before the talk" on
 screen, slower, narrating what each address is and why you need it:
+
 - `system()`'s address — the code you want to run
-- `exit()`'s address — a clean fake "return address" for *after* `system()` returns, so the program exits instead of crashing into garbage
+- `exit()`'s address — a clean fake "return address" for _after_ `system()` returns, so the program exits instead of crashing into garbage
 - the address of the string `"/bin/sh"` — `system()`'s argument
 
 **4. Build and fire the payload (1–2 min)**
+
 ```bash
 python3 build_payload.py <system_addr> <exit_addr> <binsh_addr>
 ```
+
 Run the printed command. You should drop into a shell.
 
 **5. Prove it (1 min)**
+
 ```bash
 id
+pwd
+uname -m
 exit
 ```
+
 `id` proves this is a real, working shell — not injected shellcode, just the
-*existing* `system()` function in libc, redirected to by overwriting the return
+_existing_ `system()` function in libc, redirected to by overwriting the return
 address. Nothing new was ever executed; NX never had anything to object to.
 
 ---
@@ -137,7 +149,7 @@ address. Nothing new was ever executed; NX never had anything to object to.
 ## If something goes wrong live
 
 - **Segfault instead of a shell:** your offset or one of the three addresses is
-  wrong for *this* machine/session. Don't panic — rerun the gdb steps from step 4
+  wrong for _this_ machine/session. Don't panic — rerun the gdb steps from step 4
   to re-confirm the addresses (they can differ from your pre-talk test if ASLR got
   re-enabled, e.g. after a reboot).
 - **"Command not found: checksec":** skip it, just use

