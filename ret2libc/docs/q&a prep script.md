@@ -1,42 +1,4 @@
-# Return-to-libc — Q&A Prep
-
-Short answers to likely questions. The first group sticks to concepts demonstrated in `sess2`; the second connects them to this ret2libc demo.
-
----
-
-## From the earlier labs
-
-**What is the difference between stack and heap memory?**
-
-The stack holds function-call data such as local variables and saved return addresses. The heap is used for dynamically allocated memory, such as the block returned by `malloc`. The `aslr.c` lab prints example addresses to make the locations visible; ASLR can make addresses vary between runs.
-
-**What does ASLR do?**
-
-Address Space Layout Randomization changes where memory regions are placed, making addresses harder to predict. It does not repair an overflow; it makes hard-coded addresses less reliable. The demo disables it so the addresses stay predictable during the presentation.
-
-**How can an overflow change a flag?**
-
-`strcpy` copies until it reaches a NUL byte and does not know the destination buffer’s capacity. If the input runs past the buffer, it may overwrite adjacent stack data. Whether a particular variable is adjacent, and what gets overwritten, depends on the compiled stack layout; C does not guarantee that layout.
-
-**How is changing a flag different from changing control flow?**
-
-Changing a flag affects data the program later reads. Changing control flow means overwriting a saved return address so the function returns somewhere different. Both can arise from an out-of-bounds write, but the overwritten target and resulting behavior differ.
-
-**What was the `pattern.c` value about?**
-
-It illustrates how bytes in memory correspond to a multi-byte integer. On a little-endian machine, `0x41614262` is stored as bytes `62 42 61 41`. Important caveat: the file declares `pattern` without initializing it, then reads it. That is undefined behavior in C, so its comparison result is not a reliable demonstration unless the variable is initialized or the lab is adjusted.
-
-**Does the buffer size alone tell us the offset to the return address?**
-
-No. The compiler lays out the function’s stack frame, including saved registers and padding. Use the disassembly and confirm with a controlled debugger inspection. In this build, the measured offset is 76 bytes, not simply the 64-byte buffer size.
-
-**Why can an overflow behave differently after recompiling?**
-
-Compiler version, flags, architecture, optimization, and source changes can change the stack layout and addresses. Re-check the disassembly, offset, and runtime addresses after a rebuild.
-
----
-
-## About this ret2libc demo
+# Return-to-libc - Q&A Prep
 
 **What does ret2libc mean?**
 

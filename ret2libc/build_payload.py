@@ -17,7 +17,7 @@ being sent before firing it live.
 """
 import sys
 
-OFFSET = 76  # bytes of padding from start of buffer to the saved return address
+OFFSET = 68  # bytes of padding from start of buffer to the saved return address
              # (see RUNBOOK.md step 3 for how this was derived for vuln.c)
 
 
